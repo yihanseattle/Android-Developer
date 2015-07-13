@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">My App Portfolio</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Main Screen Text -->
+    <string name="main_title">My Apps!</string>
+    <!-- Main Screen Button Text -->
+    <string name="main_spotify_streamer">SPOTIFY STREAMER</string>
+    <string name="main_popular_movies">POPULAR MOVIES</string>
+    <string name="main_scores_app">SCORES APP</string>
+    <string name="main_library_app">LIBRARY APP</string>
+    <string name="main_build_it_bigger">BUILD IT BIGGER</string>
+    <string name="main_xyz_reader">XYZ READER</string>
+    <string name="main_capstone_my_own_app">CAPSTONE: MY OWN APP</string>
+    <string name="title_activity_popular_movie">Popular Movies</string>
+    
+    <!-- Popular Movie Settings -->
+    <string name="settings_title">Sort Movies By:</string>
+    <string name="radio_sort_by_most_pop">Most Popular</string>
+    <string name="radio_sort_by_highest_rate">Highest Rate</string>
+    <string name="title_activity_popular_movie_activity_details">Movie Details</string>
+
+    <!-- Popular Movie Detail -->
+    <string name="movie_detail_mark_as_favorite">MARK AS FAVORITE</string>
+
+</resources>
