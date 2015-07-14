@@ -3,6 +3,8 @@ package p01.popular.movie;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -280,6 +282,10 @@ public class PopularMovieActivityFragment extends Fragment {
                 }
                 String jsonData = downloadUrl(url);
 
+                if (jsonData.equals(Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE)) {
+
+                    return Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE;
+                }
                 JSONObject j = new JSONObject(jsonData);
                 JSONArray jArray = j.getJSONArray(jsonArrayResult);
                 for (int i = 0; i < jArray.length(); i++) {
@@ -315,9 +321,13 @@ public class PopularMovieActivityFragment extends Fragment {
             // might want to change "executed" for the returned string passed
             // into onPostExecute() but that is upto you
             super.onPostExecute(result);
-            ma = new MyAdapter(c, l);
-            gv.setAdapter(ma);
-            ma.notifyDataSetChanged();
+            if (!result.equals(Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE)) {
+                ma = new MyAdapter(c, l);
+                gv.setAdapter(ma);
+                ma.notifyDataSetChanged();
+            } else {
+                Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
+            }
         }
 
 
@@ -325,6 +335,10 @@ public class PopularMovieActivityFragment extends Fragment {
         // the web page content as a InputStream, which it returns as
         // a string.
         private String downloadUrl(String myurl) throws IOException {
+
+            if (!isNetworkAvailable())
+                return Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE;
+
             InputStream is = null;
             // Only display the first 500 characters of the retrieved
             // web page content.
@@ -365,6 +379,12 @@ public class PopularMovieActivityFragment extends Fragment {
             while ((inputStr = streamReader.readLine()) != null)
                 responseStrBuilder.append(inputStr);
             return responseStrBuilder.toString();
+        }
+
+        private boolean isNetworkAvailable() {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
 
     }

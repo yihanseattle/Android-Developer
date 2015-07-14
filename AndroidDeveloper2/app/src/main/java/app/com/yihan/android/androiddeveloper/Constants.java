@@ -17,4 +17,7 @@ public class Constants {
     public static final String MOVIE_DETAIL_INTENT_RATING_VIEWER = "ratingViewer";
     public static final String MOVIE_DETAIL_INTENT_DESCRIPTION = "description";
     public static final String MOVIE_DETAIL_INTENT_POSTER_PATH= "posterPath";
+
+    // Popular Movies Error
+    public static final String MOVIE_NO_NETWORK_ERROR_MESSAGE = "no_network_connection";
 }
