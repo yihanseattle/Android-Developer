@@ -23,5 +23,7 @@
 
     <!-- Popular Movie Detail -->
     <string name="movie_detail_mark_as_favorite">MARK AS FAVORITE</string>
+    <string name="movie_detail_trailer_default_text_1">Trailer 1</string>
+    <string name="movie_detail_trailer_default_text_2">Trailer 2</string>
 
 </resources>

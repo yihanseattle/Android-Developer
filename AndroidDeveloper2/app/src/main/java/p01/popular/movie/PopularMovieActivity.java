@@ -1,12 +1,12 @@
 package p01.popular.movie;
 
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
 
 import app.com.yihan.android.androiddeveloper.R;
 
-public class PopularMovieActivity extends ActionBarActivity {
+public class PopularMovieActivity extends AppCompatActivity {
 
 
 

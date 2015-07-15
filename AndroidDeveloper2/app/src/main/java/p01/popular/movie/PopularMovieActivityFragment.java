@@ -1,5 +1,6 @@
 package p01.popular.movie;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +9,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -65,6 +67,9 @@ public class PopularMovieActivityFragment extends Fragment {
     public static final String DEBUG_TAG = "PopularMovieDebug";
     private volatile List<Movie> listOfMovies;
 
+
+    protected FragmentActivity mActivity;
+
     public PopularMovieActivityFragment() {
     }
 
@@ -98,7 +103,12 @@ public class PopularMovieActivityFragment extends Fragment {
                 startActivity(intent);
             }
         });
-        new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute("");
+
+        if (isNetworkAvailable()) {
+            new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute("");
+        } else {
+            Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
+        }
 
         return rootView;
     }
@@ -128,6 +138,11 @@ public class PopularMovieActivityFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mActivity = (FragmentActivity) activity;
+    }
 
     private void displaySettingsMenu() {
         settingsDialog = new Dialog(getActivity());
@@ -159,8 +174,11 @@ public class PopularMovieActivityFragment extends Fragment {
                 isSortedByHigestRate = result.equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE) ? true : false;
 
                 settingsDialog.dismiss();
-
-                new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute(result);
+                if (isNetworkAvailable()) {
+                    new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute(result);
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
+                }
             }
         });
         // show the settings dialog
@@ -282,10 +300,7 @@ public class PopularMovieActivityFragment extends Fragment {
                 }
                 String jsonData = downloadUrl(url);
 
-                if (jsonData.equals(Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE)) {
 
-                    return Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE;
-                }
                 JSONObject j = new JSONObject(jsonData);
                 JSONArray jArray = j.getJSONArray(jsonArrayResult);
                 for (int i = 0; i < jArray.length(); i++) {
@@ -308,7 +323,6 @@ public class PopularMovieActivityFragment extends Fragment {
             }
 
 
-
             return "Executed";
         }
 
@@ -321,13 +335,9 @@ public class PopularMovieActivityFragment extends Fragment {
             // might want to change "executed" for the returned string passed
             // into onPostExecute() but that is upto you
             super.onPostExecute(result);
-            if (!result.equals(Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE)) {
-                ma = new MyAdapter(c, l);
-                gv.setAdapter(ma);
-                ma.notifyDataSetChanged();
-            } else {
-                Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
-            }
+            ma = new MyAdapter(c, l);
+            gv.setAdapter(ma);
+
         }
 
 
@@ -335,9 +345,6 @@ public class PopularMovieActivityFragment extends Fragment {
         // the web page content as a InputStream, which it returns as
         // a string.
         private String downloadUrl(String myurl) throws IOException {
-
-            if (!isNetworkAvailable())
-                return Constants.MOVIE_NO_NETWORK_ERROR_MESSAGE;
 
             InputStream is = null;
             // Only display the first 500 characters of the retrieved
@@ -381,12 +388,12 @@ public class PopularMovieActivityFragment extends Fragment {
             return responseStrBuilder.toString();
         }
 
-        private boolean isNetworkAvailable() {
-            ConnectivityManager connectivityManager = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-        }
 
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) mActivity.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 }
