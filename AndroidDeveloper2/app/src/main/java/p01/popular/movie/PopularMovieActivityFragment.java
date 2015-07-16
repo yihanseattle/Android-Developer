@@ -4,9 +4,12 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -17,6 +20,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -39,6 +43,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -52,23 +57,30 @@ import app.com.yihan.android.androiddeveloper.R;
  */
 public class PopularMovieActivityFragment extends Fragment {
 
+    // Settings Menu
     private Dialog settingsDialog;
     private RadioGroup rgSettings;
     private RadioButton rbSortByPop, rbSortByHigestRate;
     private Button bSave;
-
     private boolean isSortedByHigestRate;
 
-
+    // essential views
     public View rootView;
     GridView gridView;
     MyAdapter adapter;
 
+    // Debug information
     public static final String DEBUG_TAG = "PopularMovieDebug";
+
+    // save the list of movies
     private volatile List<Movie> listOfMovies;
 
-
+    // for checking the internet connection
     protected FragmentActivity mActivity;
+
+    // save the current position of the list
+    SharedPreferences sharedPreferences;
+    int mCurrentPosition;
 
     public PopularMovieActivityFragment() {
     }
@@ -77,39 +89,89 @@ public class PopularMovieActivityFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        sharedPreferences = mActivity.getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+    }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // make sure when the screen rotation finishes, it won't do the networking again
+        outState.putParcelableArrayList("list", (ArrayList<? extends Parcelable>) listOfMovies);
+
+        // also save the current GridView position
+        // when the user comes back from the detailed screen,
+        // the previous position can be restored
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, mCurrentPosition);
+        editor.apply();
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+        // find reference
         listOfMovies = new ArrayList<>();
         isSortedByHigestRate = false;
         rootView = inflater.inflate(R.layout.fragment_popular_movie, container, false);
         gridView = (GridView) rootView.findViewById(R.id.gridview);
 
+        // make sure to have a better layout when landscape
+        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // set the number of columns to 5
+            gridView.setNumColumns(4);
+        }
+
+        // launch the detailed activity when clicked on the gridview
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                // this 'mActivity' parameter is Activity object, you can send the current activity.
-//                Intent i = new Intent(mActivity, ActvityToCall.class);
-//                mActivity.startActivity(i);
-                Intent intent = new Intent(getActivity(), PopularMovieActivityDetails.class);
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
-
-                startActivity(intent);
+            Intent intent = new Intent(getActivity(), PopularMovieActivityDetails.class);
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
+            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
+            startActivity(intent);
             }
         });
 
+        // record the GridView position
+        gridView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                mCurrentPosition = firstVisibleItem;
+            }
+        });
+
+
+        // check for internet connection first
         if (isNetworkAvailable()) {
-            new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute("");
+            if (savedInstanceState == null || !savedInstanceState.containsKey("list")) {
+                // do the networking if there is no information of GridView was found
+                String result = sharedPreferences.getString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, Constants.MOVIE_SETTINGS_SORT_BY_POPULAR);
+                new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
+            } else {
+                // skip the networking part and restore the GridView
+                listOfMovies = savedInstanceState.getParcelableArrayList("list");
+                adapter = new MyAdapter(getActivity().getApplicationContext(), listOfMovies);
+                gridView.setAdapter(adapter);
+                gridView.setSelection(sharedPreferences.getInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, 0));
+            }
         } else {
+            // show a toast to let the user know what is happening
             Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
         }
-
         return rootView;
     }
 
@@ -144,6 +206,12 @@ public class PopularMovieActivityFragment extends Fragment {
         mActivity = (FragmentActivity) activity;
     }
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
+
+    }
+
     private void displaySettingsMenu() {
         settingsDialog = new Dialog(getActivity());
 
@@ -154,7 +222,7 @@ public class PopularMovieActivityFragment extends Fragment {
         rgSettings = (RadioGroup) settingsDialog.findViewById(R.id.radioSortByGroup);
         rbSortByHigestRate = (RadioButton) settingsDialog.findViewById(R.id.radioSortByHighestRate);
         rbSortByPop = (RadioButton) settingsDialog.findViewById(R.id.radioSortByMostPop);
-        if (isSortedByHigestRate)
+        if (sharedPreferences.getString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, Constants.MOVIE_SETTINGS_SORT_BY_POPULAR).equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE))
             rbSortByHigestRate.setChecked(true);
         else
             rbSortByPop.setChecked(true);
@@ -164,21 +232,25 @@ public class PopularMovieActivityFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                // get selected radio button from radioGroup
-                int selectedId = rgSettings.getCheckedRadioButtonId();
+            // get selected radio button from radioGroup
+            int selectedId = rgSettings.getCheckedRadioButtonId();
 
-//                // find the radiobutton by returned id
-//                rbSettings = (RadioButton) settingsDialog.findViewById(selectedId);
+            // find the radiobutton by returned id
+            // rbSettings = (RadioButton) settingsDialog.findViewById(selectedId);
 
-                String result = selectedId == R.id.radioSortByHighestRate ? Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE : Constants.MOVIE_SETTINGS_SORT_BY_POPULAR;
-                isSortedByHigestRate = result.equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE) ? true : false;
+            String result = selectedId == R.id.radioSortByHighestRate ? Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE : Constants.MOVIE_SETTINGS_SORT_BY_POPULAR;
+            isSortedByHigestRate = result.equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE) ? true : false;
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, result);
+            editor.apply();
 
-                settingsDialog.dismiss();
-                if (isNetworkAvailable()) {
-                    new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies).execute(result);
-                } else {
-                    Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
-                }
+
+            settingsDialog.dismiss();
+            if (isNetworkAvailable()) {
+                new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
+            } else {
+                Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
+            }
             }
         });
         // show the settings dialog
@@ -256,37 +328,41 @@ public class PopularMovieActivityFragment extends Fragment {
 
     public class GetMovies extends AsyncTask<String, Void, String> {
 
+        // URL information
         private static final String urlPart1 = "http://api.themoviedb.org/3/discover/movie?sort_by=";
         private static final String sortByPopular = "popularity.desc";
         private static final String sortByHighestRated = "vote_average.desc";
         private static final String urlPart2 = "&api_key=";
         private static final String apiKey = "7484fef40eb0e9db4ad99a3bfbf849c7";
+
+        // JSON parsing
         private static final String jsonArrayResult = "results";
         private static final String title = "original_title";
         private static final String year = "release_date";
         // no length information given in json data
-//        private static final String length;
+        // private static final String length;
         private static final String ratingViewer = "vote_average";
         private static final String description = "overview";
         private static final String posterPath = "poster_path";
 
+        // to hold the parent activity reference
         Context c;
         GridView gv;
         MyAdapter ma;
         List<Movie> l;
+        SharedPreferences sp;
 
-        public GetMovies(Context c, MyAdapter ma, GridView gv, List<Movie> l) {
+        public GetMovies(Context c, MyAdapter ma, GridView gv, List<Movie> l, SharedPreferences sp) {
             this.c = c;
             this.ma = ma;
             this.gv = gv;
             this.l = l;
+            this.sp = sp;
         }
 
         @Override
         protected void onPreExecute() {
-
             l.clear();
-
         }
 
         @Override
@@ -298,9 +374,11 @@ public class PopularMovieActivityFragment extends Fragment {
                 } else {
                     url = urlPart1 + sortByPopular + urlPart2 + apiKey;
                 }
+
+                // make the network call and retrieve the data
                 String jsonData = downloadUrl(url);
 
-
+                // JSON parsing
                 JSONObject j = new JSONObject(jsonData);
                 JSONArray jArray = j.getJSONArray(jsonArrayResult);
                 for (int i = 0; i < jArray.length(); i++) {
@@ -314,15 +392,11 @@ public class PopularMovieActivityFragment extends Fragment {
                     Movie m = new Movie(movieDescription, movieLength, moviePosterPath, movieRatingViewer, movieTitle, movieYear);
                     l.add(m);
                 }
-
-
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-
             return "Executed";
         }
 
@@ -332,12 +406,10 @@ public class PopularMovieActivityFragment extends Fragment {
 
         @Override
         protected void onPostExecute(String result) {
-            // might want to change "executed" for the returned string passed
-            // into onPostExecute() but that is upto you
             super.onPostExecute(result);
             ma = new MyAdapter(c, l);
             gv.setAdapter(ma);
-
+            gv.setSelection(sp.getInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, 0));
         }
 
 
@@ -396,4 +468,6 @@ public class PopularMovieActivityFragment extends Fragment {
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
+
+
 }

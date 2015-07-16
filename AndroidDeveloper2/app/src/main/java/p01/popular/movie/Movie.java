@@ -1,9 +1,12 @@
 package p01.popular.movie;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Created by HanYi on 7/12/15.
  */
-public class Movie {
+public class Movie implements Parcelable{
 
     private static final String posterURL = "http://image.tmdb.org/t/p/w500";
     private String title;
@@ -72,5 +75,21 @@ public class Movie {
 
     public void setPosterPath(String posterPath) {
         this.posterPath = posterPath;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(description);
+        dest.writeString(length);
+        dest.writeString(posterPath);
+        dest.writeString(ratingViewer);
+        dest.writeString(title);
+        dest.writeString(year);
     }
 }

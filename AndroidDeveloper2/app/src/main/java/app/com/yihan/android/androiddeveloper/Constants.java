@@ -5,6 +5,12 @@ package app.com.yihan.android.androiddeveloper;
  */
 public class Constants {
 
+    // Popular Movies Share Preference constants
+    public static final String MOVIE_SHAREPREFERENCE_NAME = "MyPrefs";
+    public static final String MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION = "scroll_position";
+    public static final String MOVIE_SHAREPREFERENCE_SORT_BY = "sorted_by";
+
+
     // Popular Movies Setting Options
     public static final String MOVIE_SETTINGS_SORT_BY_POPULAR = "most_popular";
     public static final String MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE = "highest_reted";
@@ -20,4 +26,5 @@ public class Constants {
 
     // Popular Movies Error
     public static final String MOVIE_NO_NETWORK_ERROR_MESSAGE = "no_network_connection";
+
 }

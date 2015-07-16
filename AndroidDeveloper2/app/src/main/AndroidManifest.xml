@@ -24,13 +24,13 @@
             </intent-filter>
         </activity>
         <activity
-            android:configChanges="orientation|screenSize"
+
             android:name="p01.popular.movie.PopularMovieActivity"
             android:label="@string/title_activity_popular_movie"
             android:parentActivityName=".MainActivity" >
         </activity>
         <activity
-            android:configChanges="orientation|screenSize"
+            android:launchMode="singleTop"
             android:name="p01.popular.movie.PopularMovieActivityDetails"
             android:label="@string/title_activity_popular_movie_activity_details"
             android:parentActivityName="p01.popular.movie.PopularMovieActivity">
