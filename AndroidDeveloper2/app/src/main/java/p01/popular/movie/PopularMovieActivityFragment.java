@@ -26,6 +26,7 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -51,6 +52,8 @@ import java.util.List;
 
 import app.com.yihan.android.androiddeveloper.Constants;
 import app.com.yihan.android.androiddeveloper.R;
+import p02.custom.adapters.CustomListTrailers;
+import p02.sqlite.FavoriteMovieSQLiteHelper;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -62,7 +65,6 @@ public class PopularMovieActivityFragment extends Fragment {
     private RadioGroup rgSettings;
     private RadioButton rbSortByPop, rbSortByHigestRate;
     private Button bSave;
-    private boolean isSortedByHigestRate;
 
     // essential views
     public View rootView;
@@ -82,6 +84,8 @@ public class PopularMovieActivityFragment extends Fragment {
     SharedPreferences sharedPreferences;
     int mCurrentPosition;
 
+    FavoriteMovieSQLiteHelper db;
+
     public PopularMovieActivityFragment() {
     }
 
@@ -90,6 +94,7 @@ public class PopularMovieActivityFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         sharedPreferences = mActivity.getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+
     }
 
     @Override
@@ -114,10 +119,15 @@ public class PopularMovieActivityFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
+
+        db = new FavoriteMovieSQLiteHelper(getActivity());
+        db.onUpgrade(db.getWritableDatabase(), 1, 2);
+
 
         // find reference
         listOfMovies = new ArrayList<>();
-        isSortedByHigestRate = false;
+
         rootView = inflater.inflate(R.layout.fragment_popular_movie, container, false);
         gridView = (GridView) rootView.findViewById(R.id.gridview);
 
@@ -130,14 +140,15 @@ public class PopularMovieActivityFragment extends Fragment {
         // launch the detailed activity when clicked on the gridview
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-            Intent intent = new Intent(getActivity(), PopularMovieActivityDetails.class);
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
-            intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
-            startActivity(intent);
+                Intent intent = new Intent(getActivity(), PopularMovieDetails.class);
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
+                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_MOVIEID, listOfMovies.get(position).getMovieID());
+                startActivity(intent);
             }
         });
 
@@ -172,6 +183,8 @@ public class PopularMovieActivityFragment extends Fragment {
             // show a toast to let the user know what is happening
             Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
         }
+
+
         return rootView;
     }
 
@@ -232,25 +245,41 @@ public class PopularMovieActivityFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-            // get selected radio button from radioGroup
-            int selectedId = rgSettings.getCheckedRadioButtonId();
+                String result;
 
-            // find the radiobutton by returned id
-            // rbSettings = (RadioButton) settingsDialog.findViewById(selectedId);
+                // get selected radio button from radioGroup
+                int selectedId = rgSettings.getCheckedRadioButtonId();
 
-            String result = selectedId == R.id.radioSortByHighestRate ? Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE : Constants.MOVIE_SETTINGS_SORT_BY_POPULAR;
-            isSortedByHigestRate = result.equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE) ? true : false;
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, result);
-            editor.apply();
+                // handle the favorite first because it's temporary
+                if (selectedId == R.id.radioSortByFavorite) {
+                    result = Constants.MOVIE_SETTINGS_SORT_BY_FAVORITE_MOVIE;
+                    // don't save to SharedPreference because it's temporary
+                } else {
+                    result = selectedId == R.id.radioSortByHighestRate ? Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE : Constants.MOVIE_SETTINGS_SORT_BY_POPULAR;
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, result);
+                    editor.apply();
+                }
 
 
-            settingsDialog.dismiss();
-            if (isNetworkAvailable()) {
-                new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
-            } else {
-                Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
-            }
+                settingsDialog.dismiss();
+
+                if (isNetworkAvailable()) {
+                    if (result.equals(Constants.MOVIE_SETTINGS_SORT_BY_FAVORITE_MOVIE)) {
+                        // load local favorite movies
+                        List<Movie> list = db.getAllMovies();
+                        adapter = new MyAdapter(getActivity().getApplicationContext(), list);
+                        gridView.setAdapter(adapter);
+//                        gridView.setSelection(sharedPreferences.getInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, 0));
+
+
+                    } else {
+                        new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
+                    }
+
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
+                }
             }
         });
         // show the settings dialog
@@ -339,6 +368,7 @@ public class PopularMovieActivityFragment extends Fragment {
         private static final String jsonArrayResult = "results";
         private static final String title = "original_title";
         private static final String year = "release_date";
+        private static final String movieId = "id";
         // no length information given in json data
         // private static final String length;
         private static final String ratingViewer = "vote_average";
@@ -369,7 +399,9 @@ public class PopularMovieActivityFragment extends Fragment {
         protected String doInBackground(String... params) {
             try {
                 String url = "";
-                if (params[0].equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE)) {
+                if (params[0].equals(Constants.MOVIE_SETTINGS_SORT_BY_FAVORITE_MOVIE)) {
+
+                } else if (params[0].equals(Constants.MOVIE_SETTINGS_SORT_BY_HIGHEST_RATE)) {
                     url = urlPart1 + sortByHighestRated + urlPart2 + apiKey;
                 } else {
                     url = urlPart1 + sortByPopular + urlPart2 + apiKey;
@@ -389,7 +421,8 @@ public class PopularMovieActivityFragment extends Fragment {
                     String movieRatingViewer = currentMovie.getString(ratingViewer) + "/10.0";
                     String movieTitle = currentMovie.getString(title);
                     String movieYear = currentMovie.getString(year);
-                    Movie m = new Movie(movieDescription, movieLength, moviePosterPath, movieRatingViewer, movieTitle, movieYear);
+                    String id = currentMovie.getString(movieId);
+                    Movie m = new Movie(movieDescription, movieLength, moviePosterPath, movieRatingViewer, movieTitle, movieYear, id);
                     l.add(m);
                 }
             } catch (IOException e) {

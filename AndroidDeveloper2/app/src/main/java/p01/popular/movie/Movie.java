@@ -15,15 +15,43 @@ public class Movie implements Parcelable{
     private String ratingViewer;
     private String description;
     private String posterPath;
+    private int id;
+    private String movieID;
 
-    public Movie(String description, String length, String posterPath, String ratingViewer, String title, String year) {
+    public Movie() {
+    }
+
+    public Movie(String description, String length, String posterPath, String ratingViewer, String title, String year, String movieID) {
         this.description = description;
         this.length = length;
         this.posterPath = posterURL + posterPath;
         this.ratingViewer = ratingViewer;
         this.title = title;
         this.year = year;
+        this.movieID = movieID;
     }
+
+    protected Movie(Parcel in) {
+        title = in.readString();
+        year = in.readString();
+        length = in.readString();
+        ratingViewer = in.readString();
+        description = in.readString();
+        posterPath = in.readString();
+        movieID = in.readString();
+    }
+
+    public static final Creator<Movie> CREATOR = new Creator<Movie>() {
+        @Override
+        public Movie createFromParcel(Parcel in) {
+            return new Movie(in);
+        }
+
+        @Override
+        public Movie[] newArray(int size) {
+            return new Movie[size];
+        }
+    };
 
     public static String getPosterURL() {
         return posterURL;
@@ -91,5 +119,23 @@ public class Movie implements Parcelable{
         dest.writeString(ratingViewer);
         dest.writeString(title);
         dest.writeString(year);
+        dest.writeInt(id);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+
+    public String getMovieID() {
+        return movieID;
+    }
+
+    public void setMovieID(String movieID) {
+        this.movieID = movieID;
     }
 }

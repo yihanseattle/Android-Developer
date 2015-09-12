@@ -19,11 +19,13 @@
     <string name="settings_title">Sort Movies By:</string>
     <string name="radio_sort_by_most_pop">Most Popular</string>
     <string name="radio_sort_by_highest_rate">Highest Rate</string>
+    <string name="radio_sort_by_favorite_movies">Favorited Movies</string>
     <string name="title_activity_popular_movie_activity_details">Movie Details</string>
 
     <!-- Popular Movie Detail -->
-    <string name="movie_detail_mark_as_favorite">MARK AS FAVORITE</string>
+    <string name="movie_detail_mark_as_favorite">Favorite it!</string>
     <string name="movie_detail_trailer_default_text_1">Trailer 1</string>
     <string name="movie_detail_trailer_default_text_2">Trailer 2</string>
+    <string name="title_activity_popular_movie_details">PopularMovieDetails</string>
 
 </resources>

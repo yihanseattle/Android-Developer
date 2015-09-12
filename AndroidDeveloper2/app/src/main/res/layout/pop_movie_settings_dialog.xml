@@ -40,6 +40,12 @@
                 android:layout_height="wrap_content"
                 android:text="@string/radio_sort_by_highest_rate" />
 
+            <RadioButton
+                android:id="@+id/radioSortByFavorite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/radio_sort_by_favorite_movies" />
+
         </RadioGroup>
 
     </LinearLayout>
