@@ -13,6 +13,8 @@ import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,6 +26,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -53,6 +56,7 @@ import java.util.List;
 import app.com.yihan.android.androiddeveloper.Constants;
 import app.com.yihan.android.androiddeveloper.R;
 import p02.custom.adapters.CustomListTrailers;
+import p02.helper.MainScreenHelperFragment;
 import p02.sqlite.FavoriteMovieSQLiteHelper;
 
 /**
@@ -94,6 +98,7 @@ public class PopularMovieActivityFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         sharedPreferences = mActivity.getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+
 
     }
 
@@ -140,15 +145,48 @@ public class PopularMovieActivityFragment extends Fragment {
         // launch the detailed activity when clicked on the gridview
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                Intent intent = new Intent(getActivity(), PopularMovieDetails.class);
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
-                intent.putExtra(Constants.MOVIE_DETAIL_INTENT_MOVIEID, listOfMovies.get(position).getMovieID());
-                startActivity(intent);
+
+                // get the flag for pane mode
+                boolean isOnePane = false;
+                SharedPreferences prefs = getActivity().getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+                String restoredText = prefs.getString("text", null);
+                if (restoredText != null) {
+                    isOnePane = prefs.getBoolean(Constants.IS_ONE_PANE_MODE, true);
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "Shared Preference is not working. I'm shutting down.", Toast.LENGTH_LONG).show();
+                    getActivity().finish();
+                }
+
+                if (isOnePane) {
+                    Intent intent = new Intent(getActivity(), PopularMovieDetails.class);
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
+                    intent.putExtra(Constants.MOVIE_DETAIL_INTENT_MOVIEID, listOfMovies.get(position).getMovieID());
+                    startActivity(intent);
+                } else {
+                    Bundle args = new Bundle();
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_LENGTH, listOfMovies.get(position).getLength());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH, listOfMovies.get(position).getPosterPath());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER, listOfMovies.get(position).getRatingViewer());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_TITLE, listOfMovies.get(position).getTitle());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_YEAR, listOfMovies.get(position).getYear());
+                    args.putString(Constants.MOVIE_DETAIL_INTENT_MOVIEID, listOfMovies.get(position).getMovieID());
+
+                    PopularMovieDetailsFragment pmdf = new PopularMovieDetailsFragment();
+                    pmdf.setArguments(args);
+
+                    FragmentTransaction t = getActivity().getSupportFragmentManager()
+                            .beginTransaction();
+                    t.replace(R.id.container_movies_details, pmdf);
+                    t.commit();
+                }
+
+
             }
         });
 
@@ -184,6 +222,21 @@ public class PopularMovieActivityFragment extends Fragment {
             Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
         }
 
+        SharedPreferences prefs = getActivity().getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        if (isTablet(getActivity().getApplicationContext())) {
+            editor.putBoolean(Constants.IS_ONE_PANE_MODE, false);
+
+            // display helper message
+            FragmentTransaction t = getActivity().getSupportFragmentManager()
+                    .beginTransaction();
+            t.replace(R.id.container_movies_details, new MainScreenHelperFragment());
+            t.commit();
+        } else {
+            editor.putBoolean(Constants.IS_ONE_PANE_MODE, true);
+
+        }
+        editor.apply();
 
         return rootView;
     }
@@ -277,6 +330,13 @@ public class PopularMovieActivityFragment extends Fragment {
                         new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
                     }
 
+                    if (isTablet(getActivity().getApplicationContext())) {
+                        // display helper message
+                        FragmentTransaction t = getActivity().getSupportFragmentManager()
+                                .beginTransaction();
+                        t.replace(R.id.container_movies_details, new MainScreenHelperFragment());
+                        t.commit();
+                    }
                 } else {
                     Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
                 }
@@ -502,5 +562,9 @@ public class PopularMovieActivityFragment extends Fragment {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-
+    public static boolean isTablet(Context context) {
+        return (context.getResources().getConfiguration().screenLayout
+                & Configuration.SCREENLAYOUT_SIZE_MASK)
+                >= Configuration.SCREENLAYOUT_SIZE_LARGE;
+    }
 }

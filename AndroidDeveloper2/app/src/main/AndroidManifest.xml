@@ -28,11 +28,14 @@
             android:label="@string/title_activity_popular_movie"
             android:parentActivityName=".MainActivity" >
         </activity>
-
         <activity
             android:name="p01.popular.movie.PopularMovieDetails"
             android:label="@string/title_activity_popular_movie_details"
-            android:parentActivityName="p01.popular.movie.PopularMovieActivity">
+            android:parentActivityName="p01.popular.movie.PopularMovieActivity" >
+        </activity>
+        <activity
+            android:name="p02.helper.MainScreenHelper"
+            android:label="@string/title_activity_main_screen_helper" >
         </activity>
     </application>
 

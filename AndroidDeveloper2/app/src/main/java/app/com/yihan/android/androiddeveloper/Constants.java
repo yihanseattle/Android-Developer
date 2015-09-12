@@ -9,7 +9,7 @@ public class Constants {
     public static final String MOVIE_SHAREPREFERENCE_NAME = "MyPrefs";
     public static final String MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION = "scroll_position";
     public static final String MOVIE_SHAREPREFERENCE_SORT_BY = "sorted_by";
-
+    public static final String IS_ONE_PANE_MODE = "one_pane";
 
     // Popular Movies Setting Options
     public static final String MOVIE_SETTINGS_SORT_BY_POPULAR = "most_popular";

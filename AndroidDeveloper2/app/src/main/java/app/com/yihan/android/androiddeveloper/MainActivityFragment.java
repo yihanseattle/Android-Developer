@@ -35,6 +35,7 @@ public class MainActivityFragment extends Fragment {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, 0);
         editor.putString(Constants.MOVIE_SHAREPREFERENCE_SORT_BY, Constants.MOVIE_SETTINGS_SORT_BY_POPULAR);
+        editor.putString("text", "abcdefg");
         editor.apply();
 
         return inflater.inflate(R.layout.fragment_main, container, false);

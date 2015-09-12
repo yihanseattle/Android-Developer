@@ -27,5 +27,6 @@
     <string name="movie_detail_trailer_default_text_1">Trailer 1</string>
     <string name="movie_detail_trailer_default_text_2">Trailer 2</string>
     <string name="title_activity_popular_movie_details">PopularMovieDetails</string>
+    <string name="title_activity_main_screen_helper">MainScreenHelper</string>
 
 </resources>

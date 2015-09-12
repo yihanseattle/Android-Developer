@@ -1,6 +1,8 @@
 package p01.popular.movie;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -43,6 +45,7 @@ import p02.sqlite.FavoriteMovieSQLiteHelper;
  */
 public class PopularMovieDetailsFragment extends Fragment {
 
+    static final String DETAIL_URI = "URI";
 
     TextView tvDescription, tvYear, tvTitle, tvRating, tvLength;
     ImageView ivPoster;
@@ -59,7 +62,6 @@ public class PopularMovieDetailsFragment extends Fragment {
 
     // Debug information
     public static final String DEBUG_TAG = "MovieDetailsDebug";
-
 
 
     public PopularMovieDetailsFragment() {
@@ -98,16 +100,50 @@ public class PopularMovieDetailsFragment extends Fragment {
     }
 
     private void showMovieInformation() {
-        Intent intent = getActivity().getIntent();
-        String movieDetailsOverview = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION);
-        String movieDetailsYear = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_YEAR);
-        String movieDetailsTitle = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_TITLE);
-        String movieDetailsRating = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER);
-        String movieDetailsPosterPath = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH);
-        String movieDetailsLength = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH);
-        movieId = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_MOVIEID);
+
+        // get the flag for pane mode
+        boolean isOnePane = false;
+        SharedPreferences prefs = getActivity().getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
+        String restoredText = prefs.getString("text", null);
+        if (restoredText != null) {
+            isOnePane = prefs.getBoolean(Constants.IS_ONE_PANE_MODE, true);
+        }
+
+        // retrieve necessary data
+        String movieDetailsOverview;
+        String movieDetailsYear;
+        String movieDetailsTitle;
+        String movieDetailsRating;
+        String movieDetailsPosterPath;
+        String movieDetailsLength;
+
+        if (isOnePane) {
+            // one pane
+            Intent intent = getActivity().getIntent();
+            movieDetailsOverview = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION);
+            movieDetailsYear = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_YEAR);
+            movieDetailsTitle = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_TITLE);
+            movieDetailsRating = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER);
+            movieDetailsPosterPath = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH);
+            movieDetailsLength = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_LENGTH);
+            movieId = intent.getStringExtra(Constants.MOVIE_DETAIL_INTENT_MOVIEID);
+        } else {
+            // two pane
+            Bundle args = getArguments();
+            movieDetailsOverview = args.getString(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION);
+            movieDetailsYear = args.getString(Constants.MOVIE_DETAIL_INTENT_YEAR);
+            movieDetailsTitle = args.getString(Constants.MOVIE_DETAIL_INTENT_TITLE);
+            movieDetailsRating = args.getString(Constants.MOVIE_DETAIL_INTENT_RATING_VIEWER);
+            movieDetailsPosterPath = args.getString(Constants.MOVIE_DETAIL_INTENT_POSTER_PATH);
+            movieDetailsLength = args.getString(Constants.MOVIE_DETAIL_INTENT_LENGTH);
+            movieId = args.getString(Constants.MOVIE_DETAIL_INTENT_MOVIEID);
+        }
+
+        // record the Movie object.
+        // It's used later in Save As Favorite in the Database
         movie = new Movie(movieDetailsOverview, movieDetailsLength, movieDetailsPosterPath, movieDetailsRating, movieDetailsTitle, movieDetailsYear, movieId);
 
+        // display information on the screen
         tvDescription.setText(movieDetailsOverview);
         tvYear.setText(movieDetailsYear);
         tvTitle.setText(movieDetailsTitle);
@@ -115,13 +151,13 @@ public class PopularMovieDetailsFragment extends Fragment {
         Picasso.with(getActivity().getApplicationContext()).load(movieDetailsPosterPath).into(ivPoster);
         tvLength.setText(movieDetailsLength);
 
-
-        List m = db.getAllMovies();
-        if (m.size() == 0) {
-            Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
-        }
+        // DEBUG
+//        List m = db.getAllMovies();
+//        if (m.size() == 0) {
+//            Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
+//        } else {
+//            Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
+//        }
 
         // set the correct text for the button
         Movie mm = db.getFavoriteMovie(movieId);
@@ -140,35 +176,39 @@ public class PopularMovieDetailsFragment extends Fragment {
                 if (hasBeenFavorited) {
                     bFavoriteMarker.setText("Favorite it!");
                     db.deleteFavoriteMovie(movie);
-                    Movie mm = db.getFavoriteMovie(movieId);
-                    if (mm == null) {
-                        Toast.makeText(getActivity().getApplicationContext(), "Delete Successful", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getActivity().getApplicationContext(), "Delete Unsuccessful", Toast.LENGTH_LONG).show();
-                    }
 
-                    List m = db.getAllMovies();
-                    if (m.size() == 0) {
-                        Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
-                    }
+                    // DEBUG
+//                    Movie mm = db.getFavoriteMovie(movieId);
+//                    if (mm == null) {
+//                        Toast.makeText(getActivity().getApplicationContext(), "Delete Successful", Toast.LENGTH_LONG).show();
+//                    } else {
+//                        Toast.makeText(getActivity().getApplicationContext(), "Delete Unsuccessful", Toast.LENGTH_LONG).show();
+//                    }
+//
+//                    List m = db.getAllMovies();
+//                    if (m.size() == 0) {
+//                        Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
+//                    } else {
+//                        Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
+//                    }
                 } else {
                     bFavoriteMarker.setText("Unfavorite it.");
                     db.createFavoriteMovie(movie);
-                    Movie mm = db.getFavoriteMovie(movieId);
-                    if (mm == null) {
-                        Toast.makeText(getActivity().getApplicationContext(), "Create Unsuccessful", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getActivity().getApplicationContext(), "Create Successful", Toast.LENGTH_LONG).show();
-                    }
 
-                    List m = db.getAllMovies();
-                    if (m.size() == 0) {
-                        Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
-                    }
+                    // DEBUG
+//                    Movie mm = db.getFavoriteMovie(movieId);
+//                    if (mm == null) {
+//                        Toast.makeText(getActivity().getApplicationContext(), "Create Unsuccessful", Toast.LENGTH_LONG).show();
+//                    } else {
+//                        Toast.makeText(getActivity().getApplicationContext(), "Create Successful", Toast.LENGTH_LONG).show();
+//                    }
+//
+//                    List m = db.getAllMovies();
+//                    if (m.size() == 0) {
+//                        Toast.makeText(getActivity().getApplicationContext(), "empty", Toast.LENGTH_LONG).show();
+//                    } else {
+//                        Toast.makeText(getActivity().getApplicationContext(), "not empty", Toast.LENGTH_LONG).show();
+//                    }
 
                 }
                 hasBeenFavorited = !hasBeenFavorited;
@@ -434,9 +474,6 @@ public class PopularMovieDetailsFragment extends Fragment {
             return responseStrBuilder.toString();
         }
     }
-
-
-
 
 
 }

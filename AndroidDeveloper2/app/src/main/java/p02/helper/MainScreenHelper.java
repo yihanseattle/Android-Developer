@@ -1,4 +1,4 @@
-package p01.popular.movie;
+package p02.helper;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -7,33 +7,19 @@ import android.view.MenuItem;
 
 import app.com.yihan.android.androiddeveloper.R;
 
-public class PopularMovieDetails extends AppCompatActivity {
+public class MainScreenHelper extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_popular_movie_details);
-//        if (savedInstanceState == null) {
-//            // Create the detail fragment and add it to the activity
-//            // using a fragment transaction.
-//
-//            Bundle arguments = new Bundle();
-//            arguments.putParcelable(PopularMovieDetailsFragment.DETAIL_URI, getIntent().getData());
-//
-//            PopularMovieDetailsFragment fragment = new PopularMovieDetailsFragment();
-//            fragment.setArguments(arguments);
-//
-//            getSupportFragmentManager().beginTransaction()
-//                    .add(R.id.container_movies_details, fragment)
-//                    .commit();
-//        }
+        setContentView(R.layout.activity_main_screen_helper);
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_popular_movie_details, menu);
+        getMenuInflater().inflate(R.menu.menu_main_screen_helper, menu);
         return true;
     }
 
