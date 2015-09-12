@@ -157,6 +157,7 @@ public class PopularMovieActivityFragment extends Fragment {
                     getActivity().finish();
                 }
 
+                // ready to pass data
                 if (isOnePane) {
                     Intent intent = new Intent(getActivity(), PopularMovieDetails.class);
                     intent.putExtra(Constants.MOVIE_DETAIL_INTENT_DESCRIPTION, listOfMovies.get(position).getDescription());
@@ -222,6 +223,7 @@ public class PopularMovieActivityFragment extends Fragment {
             Toast.makeText(getActivity().getApplicationContext(), "No Network Connection.", Toast.LENGTH_LONG).show();
         }
 
+        // record the mode: one-pane or two-pane
         SharedPreferences prefs = getActivity().getSharedPreferences(Constants.MOVIE_SHAREPREFERENCE_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         if (isTablet(getActivity().getApplicationContext())) {
@@ -562,6 +564,13 @@ public class PopularMovieActivityFragment extends Fragment {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
+    /**
+     * Source code is from the Internet:
+     * http://stackoverflow.com/questions/11330363/how-to-detect-device-is-android-phone-or-android-tablet
+     *
+     * @param context
+     * @return
+     */
     public static boolean isTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK)
