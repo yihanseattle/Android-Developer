@@ -229,11 +229,7 @@ public class PopularMovieActivityFragment extends Fragment {
         if (isTablet(getActivity().getApplicationContext())) {
             editor.putBoolean(Constants.IS_ONE_PANE_MODE, false);
 
-            // display helper message
-            FragmentTransaction t = getActivity().getSupportFragmentManager()
-                    .beginTransaction();
-            t.replace(R.id.container_movies_details, new MainScreenHelperFragment());
-            t.commit();
+
         } else {
             editor.putBoolean(Constants.IS_ONE_PANE_MODE, true);
 
@@ -326,7 +322,12 @@ public class PopularMovieActivityFragment extends Fragment {
                         adapter = new MyAdapter(getActivity().getApplicationContext(), list);
                         gridView.setAdapter(adapter);
 //                        gridView.setSelection(sharedPreferences.getInt(Constants.MOVIE_SHAREPREFERENCE_SCROLL_CURRENT_POSITION, 0));
-
+                        
+                        // display helper message
+                        FragmentTransaction t = getActivity().getSupportFragmentManager()
+                                .beginTransaction();
+                        t.replace(R.id.container_movies_details, new MainScreenHelperFragment());
+                        t.commit();
 
                     } else {
                         new PopularMovieActivityFragment().new GetMovies(getActivity().getBaseContext(), adapter, gridView, listOfMovies, sharedPreferences).execute(result);
