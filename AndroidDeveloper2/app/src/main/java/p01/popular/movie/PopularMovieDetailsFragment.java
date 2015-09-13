@@ -1,5 +1,6 @@
 package p01.popular.movie;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -78,8 +79,8 @@ public class PopularMovieDetailsFragment extends Fragment {
         db = new FavoriteMovieSQLiteHelper(getActivity());
         initializeViews(rootView);
         showMovieInformation();
-        showMovieTrailers();
-        showMovieReviews();
+        showMovieTrailers(getActivity().getApplicationContext(), getActivity());
+        showMovieReviews(getActivity().getApplicationContext(), getActivity());
 
 
         lvTrailers = (ListView) rootView.findViewById(R.id.lvMovieTrailers);
@@ -216,13 +217,13 @@ public class PopularMovieDetailsFragment extends Fragment {
         });
     }
 
-    private void showMovieTrailers() {
-        new GetMovieTrailers().execute(movieId);
+    private void showMovieTrailers(Context c, Activity a) {
+        new GetMovieTrailers(c, a).execute(movieId);
 
     }
 
-    private void showMovieReviews() {
-        new GetMovieReviews().execute(movieId);
+    private void showMovieReviews(Context c, Activity a) {
+        new GetMovieReviews(c, a).execute(movieId);
     }
 
 
@@ -237,6 +238,13 @@ public class PopularMovieDetailsFragment extends Fragment {
         private static final String trailersYoutubeSource = "source";
 
         private List<MovieTrailer> listTrailers;
+        private Context context;
+        private Activity activity;
+
+        public GetMovieTrailers(Context c, Activity a) {
+            this.context = c;
+            this.activity = a;
+        }
 
         @Override
         protected void onPreExecute() {
@@ -287,14 +295,14 @@ public class PopularMovieDetailsFragment extends Fragment {
                 movieTrailerURLs[i] = listTrailers.get(i).getTrailerURL();
             }
 
-            CustomListTrailers adapter = new CustomListTrailers(getActivity(), web, movieTrailerURLs);
+            CustomListTrailers adapter = new CustomListTrailers(context, activity, web, movieTrailerURLs);
             lvTrailers.setAdapter(adapter);
             lvTrailers.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view,
                                         int position, long id) {
-                    Toast.makeText(getActivity().getApplicationContext(), "You Clicked at " + web[+position], Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "You Clicked at " + web[+position], Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(movieTrailerURLs[position])));
                 }
             });
@@ -361,6 +369,13 @@ public class PopularMovieDetailsFragment extends Fragment {
         private static final String reviewResultsContent = "content";
 
         private List<MovieReview> listReviews;
+        private Activity activity;
+        private Context context;
+
+        public GetMovieReviews(Context context, Activity activity) {
+            this.activity = activity;
+            this.context = context;
+        }
 
         @Override
         protected void onPreExecute() {
@@ -399,7 +414,7 @@ public class PopularMovieDetailsFragment extends Fragment {
         protected void onPostExecute(String result) {
 
             if (listReviews.size() == 0) {
-                Toast.makeText(getActivity().getApplicationContext(), "No Reviews Found For This Movie", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "No Reviews Found For This Movie", Toast.LENGTH_SHORT).show();
             }
 
             // save the names to an local array
@@ -414,14 +429,14 @@ public class PopularMovieDetailsFragment extends Fragment {
                 content[i] = listReviews.get(i).getReviewContent();
             }
 
-            CustomListReviews adapter = new CustomListReviews(getActivity(), author, content);
+            CustomListReviews adapter = new CustomListReviews(context, activity, author, content);
             lvReviews.setAdapter(adapter);
             lvReviews.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view,
                                         int position, long id) {
-                    Toast.makeText(getActivity().getApplicationContext(), "You Clicked at " + author[+position], Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "You Clicked at " + author[+position], Toast.LENGTH_SHORT).show();
                 }
             });
 
